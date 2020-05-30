@@ -1,0 +1,37 @@
+{
+    "comment":"this is the default config for nanopore single cell long read data using 10X RNA-seq kit. use splice annotation in alignment.",
+    "pipeline_parameters":{
+        "do_genome_alignment":true,
+        "do_isoform_identification":true,
+        "do_read_realignment":true,
+        "do_transcript_quantification":true
+    },
+    "global_parameters":{
+        "generate_raw_isoform":false,
+        "has_UMI":true
+    },
+    "isoform_parameters":{
+        "MAX_DIST":10,
+        "MAX_TS_DIST":120,
+        "MAX_SPLICE_MATCH_DIST":10,
+        "min_fl_exon_len":40,
+        "Max_site_per_splice":3,
+        "Min_sup_cnt":5,
+        "Min_cnt_pct":0.001,
+        "Min_sup_pct":0.2,
+        "strand_specific":-1,
+        "remove_incomp_reads":4,
+        "random_seed":666666
+    },
+    "alignment_parameters":{
+        "use_junctions":true,
+        "no_flank":false
+    },
+    "realign_parameters":{
+        "use_annotation":true
+    },
+    "transcript_counting":{
+        "min_tr_coverage":0.4,
+        "min_read_coverage":0.4
+    }
+}
