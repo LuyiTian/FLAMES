@@ -4,11 +4,16 @@ import pysam
 
 
 def gff3_to_bed12(mm2_prog_path, gff3_file, bed12_file):
-    cmd = "{_k8} {_paftools} gff2bed {_gff3} > {_bed}".format(
-        _k8=os.path.join(mm2_prog_path, "k8"),
-        _paftools=os.path.join(mm2_prog_path, "paftools.js"),
-        _gff3=gff3_file,
-        _bed=bed12_file)
+    if mm2_prog_path != "":
+        cmd = "{_k8} {_paftools} gff2bed {_gff3} > {_bed}".format(
+            _k8=os.path.join(mm2_prog_path, "k8"),
+            _paftools=os.path.join(mm2_prog_path, "paftools.js"),
+            _gff3=gff3_file,
+            _bed=bed12_file)
+    else:
+        cmd = "paftools.js gff2bed {_gff3} > {_bed}".format(
+            _gff3=gff3_file,
+            _bed=bed12_file)
     print subprocess.check_output([cmd], shell=True, stderr=subprocess.STDOUT)
 
 
