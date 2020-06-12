@@ -950,7 +950,10 @@ class Isoforms(object):
 
 
 def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, gene_dict, transcript_to_junctions, transcript_dict, fa_f, config, downsample_ratio, raw_gff3=None):
-    random.seed( config["random_seed"] )
+    if "random_seed" in config.keys():
+        random.seed(config["random_seed"])
+    else:
+        random.seed(666666)
     bamfile = pysam.AlignmentFile(bam_in, "rb")
     #csv_out = open(summary_csv,"w")
     iso_annotated = open(out_gff3,"w")
