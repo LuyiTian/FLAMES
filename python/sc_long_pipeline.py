@@ -95,7 +95,7 @@ def get_args():
     return args
 
 
-def main(args):
+def sc_long_pipeline(args):
     # parse configuration file
 
     if os.path.isfile(args.config_file):
@@ -210,4 +210,4 @@ def main(args):
 
 if __name__ == '__main__':
     args = get_args()
-    main(args)
+    sc_long_pipeline(args)
