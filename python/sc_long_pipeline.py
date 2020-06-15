@@ -1,4 +1,4 @@
-# sc_long_pipeline
+#!/usr/env python
 
 import argparse
 import os
