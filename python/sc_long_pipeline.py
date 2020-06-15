@@ -11,7 +11,7 @@ from gff3_to_fa import get_transcript_seq
 from minimap2_align import minimap2_tr_align, gff3_to_bed12, minimap2_align, samtools_sort_index
 from count_tr import parse_realigned_bam, parse_realigned_bam1, wrt_tr_to_csv, realigned_bam_coverage, parse_realigned_bam_raw
 from filter_gff import annotate_filter_gff
-__PROG = "FLTSA"
+__PROG = "FLAMES"
 __AUTHOR = "Luyi Tian"
 __VERSION = "0.1"
 __MAN = \
