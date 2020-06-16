@@ -38,7 +38,7 @@ def wrt_tr_to_csv(bc_tr_count_dict, transcript_dict, csv_f, transcript_dict_ref=
         if tr in transcript_dict:
             f.write("{},{},".format(tr,transcript_dict[tr].parent_id))
         elif (transcript_dict_ref is not None) and (tr in transcript_dict_ref):
-             f.write("{},{},".format(tr,transcript_dict_ref[tr].parent_id))
+            f.write("{},{},".format(tr,transcript_dict_ref[tr].parent_id))
         else:
             print "cannot find transcript in transcript_dict:", tr
             exit(1)
