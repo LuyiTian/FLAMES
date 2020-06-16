@@ -11,6 +11,9 @@ from gff3_to_fa import get_transcript_seq
 from minimap2_align import minimap2_tr_align, gff3_to_bed12, minimap2_align, samtools_sort_index
 from count_tr import parse_realigned_bam, parse_realigned_bam1, wrt_tr_to_csv, realigned_bam_coverage, parse_realigned_bam_raw
 from filter_gff import annotate_filter_gff
+from sc_long_pipeline import sc_long_pipeline
+from merge_bulk_fq import merge_bulk_fq
+
 __PROG = "FLAMES"
 __AUTHOR = "Luyi Tian"
 __VERSION = "0.1"
@@ -41,61 +44,70 @@ def get_args():
         description=__MAN,
         epilog="NOTE: make sure samtools is in PATH.",
         formatter_class=argparse.RawDescriptionHelpFormatter
-        )
+    )
+
     parser.add_argument(
         "-a", "--gff3",
         help="The gene annotation in gff3 format.",
         type=str,
         required=True
-        )
+    )
+
     parser.add_argument(
-        "-i", "--infq",
-        help="input fastq file.",
+        "-i", "--fq_dir",
+        help="folder containing fastq files.",
         type=str,
         default=True
-        )
+    )
+
     parser.add_argument(
         "-b", "--inbam",
         help="aligned bam file (should be sorted and indexed). it will overwrite the `--infq` parameter and skip the first alignment step",
         type=str,
         default=""
-        )
+    )
+
     parser.add_argument(
         "--outdir", "-o",
         help="directory to deposite all results in rootdir, use absolute path",
         type=str,
         required=True
-        )
+    )
+
     parser.add_argument(
         "--genomefa", "-f",
         help="genome fasta file",
         type=str,
         required=True
-        )
+    )
+
     parser.add_argument(
         "--minimap2_dir", "-m",
         help="directory contains minimap2, k8 and paftools.js program. k8 and paftools.js are used to convert gff3 to bed12.",
         type=str,
         required=False,
         default=""
-        )
+    )
+
     parser.add_argument(
-        "--config_file","-c",
+        "--config_file", "-c",
         help="json configuration files (default %(default)s)",
         type=str,
         default="config_sclr_nanopore_default.json"
-        )
+    )
+
     parser.add_argument(
-        "--downsample_ratio","-d",
+        "--downsample_ratio", "-d",
         help="downsampling ratio if performing downsampling analysis",
         type=float,
         default=1
-        )
+    )
+
     args = parser.parse_args()
     return args
 
 
-def sc_long_pipeline(args):
+def bulk_long_pipeline(args):
     # parse configuration file
 
     if os.path.isfile(args.config_file):
@@ -181,7 +193,6 @@ def sc_long_pipeline(args):
         print "### skip finding isoforms", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # get fasta
-    #print "### generate transcript fasta file", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     chr_to_gene_i, transcript_dict_i, gene_to_transcript_i, transcript_to_exon_i = parse_gff_tree(isoform_gff3)
     ref_dict = {"chr_to_gene":chr_to_gene, "transcript_dict":transcript_dict, "gene_to_transcript":gene_to_transcript, "transcript_to_exon":transcript_to_exon}
     if not config_dict["realign_parameters"]["use_annotation"]:
@@ -200,14 +211,32 @@ def sc_long_pipeline(args):
     # quantification
     if config_dict["pipeline_parameters"]["do_transcript_quantification"]:
         print "### generate transcript count matrix", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        bc_tr_count_dict, bc_tr_badcov_count_dict, tr_kept = parse_realigned_bam(realign_bam, transcript_fa_idx, config_dict["isoform_parameters"]["Min_sup_cnt"], config_dict["transcript_counting"]["min_tr_coverage"], config_dict["transcript_counting"]["min_read_coverage"])
-        #realigned_bam_coverage(realign_bam, transcript_fa_idx, args.outdir)
+        bc_tr_count_dict, bc_tr_badcov_count_dict, tr_kept = parse_realigned_bam(
+            realign_bam,
+            transcript_fa_idx,
+            config_dict["isoform_parameters"]["Min_sup_cnt"],
+            config_dict["transcript_counting"]["min_tr_coverage"],
+            config_dict["transcript_counting"]["min_read_coverage"],
+            bc_file = args.bc_file)
         tr_cnt = wrt_tr_to_csv(bc_tr_count_dict, transcript_dict_i, tr_cnt_csv, transcript_dict, config_dict["global_parameters"]["has_UMI"])
         wrt_tr_to_csv(bc_tr_badcov_count_dict, transcript_dict_i, tr_badcov_cnt_csv, transcript_dict, config_dict["global_parameters"]["has_UMI"])
         annotate_filter_gff(isoform_gff3,args.gff3,isoform_gff3_f,FSM_anno_out,tr_cnt,config_dict["isoform_parameters"]["Min_sup_cnt"])
     else:
         print "### skip transcript quantification", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+
 if __name__ == '__main__':
     args = get_args()
-    sc_long_pipeline(args)
+    args.infq = "{}/merged.fastq.gz".format(args.outdir)
+    args.bc_file = "{}/pseudo_barcode_annotation.csv".format(args.outdir)
+
+    print "Preprocessing bulk fastqs..."
+    # creating output diretory for use by merge_bulk_fq
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
+        print("output directory not exist, create one:")
+        print(args.outdir)
+    merge_bulk_fq(args.fq_dir, args.bc_file, args.infq)
+
+    print "Running FLAMES pipeline..."
+    bulk_long_pipeline(args)

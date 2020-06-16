@@ -80,7 +80,7 @@ def annotate_full_splice_match(transcript_to_exon,transcript_to_exon_ref,transcr
 
 def annotate_filter_gff(isoform_gff,ref_gff,isoform_out,anno_out,tr_cnt,min_sup_reads):
     """
-    combine FLTSA ouput with reference and filter out transcript by
+    combine FLAMES ouput with reference and filter out transcript by
     realignment result
     """
     gff3_fmt = "{_ch}\t{_sr}\t{_ty}\t{_st}\t{_en}\t{_sc}\t{_stnd}\t{_ph}\t{_attr}"
@@ -96,7 +96,7 @@ def annotate_filter_gff(isoform_gff,ref_gff,isoform_out,anno_out,tr_cnt,min_sup_
             ma = -1
             for tr in gene_to_transcript[ge]:
                 if (tr in tr_cnt) and (tr_cnt[tr]>=min_sup_reads):
-                    gff_tmp.append(gff3_fmt.format(_ch=ch,_sr="FLTSA",_ty="transcript",
+                    gff_tmp.append(gff3_fmt.format(_ch=ch,_sr="FLAMES",_ty="transcript",
                         _st=transcript_to_exon[tr][0][0]+1,
                         _en=transcript_to_exon[tr][-1][1],
                         _sc=".",_stnd=transcript_dict[tr].strand, _ph=".",
@@ -106,13 +106,13 @@ def annotate_filter_gff(isoform_gff,ref_gff,isoform_out,anno_out,tr_cnt,min_sup_
                     ma = max(ma,transcript_to_exon[tr][-1][1])
                     exon_idx = 1
                     for ex in transcript_to_exon[tr]:
-                        gff_tmp.append(gff3_fmt.format(_ch=ch,_sr="FLTSA",_ty="exon",_st=ex[0]+1,_en=ex[1], # `+1` because gff is 1-based
+                        gff_tmp.append(gff3_fmt.format(_ch=ch,_sr="FLAMES",_ty="exon",_st=ex[0]+1,_en=ex[1], # `+1` because gff is 1-based
                         _sc=".",_stnd=transcript_dict[tr].strand, _ph=".",
                         _attr="exon_id=exon:{}_{};Parent=transcript:{};rank={}".format(ex[0]+1, ex[1],tr, exon_idx )))
                         exon_idx += 1
             if ge in gene_to_transcript_ref:
                 for tr in gene_to_transcript_ref[ge]:
-                    if (tr not in transcript_dict) and (tr in tr_cnt) and (tr_cnt[tr]>=min_sup_reads):  # not in FLTSA output but in tr count
+                    if (tr not in transcript_dict) and (tr in tr_cnt) and (tr_cnt[tr]>=min_sup_reads):  # not in FLAMES output but in tr count
                         gff_tmp.append(gff3_fmt.format(_ch=ch,_sr="reference",_ty="transcript",
                             _st=transcript_to_exon_ref[tr][0][0]+1,
                             _en=transcript_to_exon_ref[tr][-1][1],
@@ -128,7 +128,7 @@ def annotate_filter_gff(isoform_gff,ref_gff,isoform_out,anno_out,tr_cnt,min_sup_
                             _attr="exon_id=exon:{}_{};Parent=transcript:{};rank={}".format(ex[0]+1, ex[1],tr, exon_idx )))
                             exon_idx += 1
             if len(gff_tmp)>0:
-                gff_tmp.insert(0,gff3_fmt.format(_ch=ch,_sr="FLTSA",_ty="gene",
+                gff_tmp.insert(0,gff3_fmt.format(_ch=ch,_sr="FLAMES",_ty="gene",
                     _st=mi+1,
                     _en=ma,
                     _sc=".",_stnd=transcript_dict[gene_to_transcript[ge][0]].strand, _ph=".",
