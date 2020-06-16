@@ -109,7 +109,14 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     args.infq = "{}/merged.fastq.gz".format(args.outdir)
+
     print "Preprocessing bulk fastqs..."
+    # creating output diretory for use by merge_bulk_fq
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
+        print("output directory not exist, create one:")
+        print(args.outdir)
     merge_bulk_fq(args.fq_dir, "{}/barcode_anno.csv".format(args.outdir), args.infq)
+
     print "Running FLAMES pipeline..."
     sc_long_pipeline(args)
