@@ -14,7 +14,7 @@ from filter_gff import annotate_filter_gff
 from sc_long_pipeline import sc_long_pipeline
 from merge_bulk_fq import merge_bulk_fq
 
-__PROG = "FLAMES"
+__PROG = "FLAMES bulk"
 __AUTHOR = "Luyi Tian"
 __VERSION = "0.1"
 __MAN = \
@@ -25,6 +25,7 @@ __MAN = \
 # Authors: {}
 #
 # semi-supervised isoform detection and annotation from long read data.
+# This variant is meant for bulk samples.
 # output:
 # outdir:
 #   transcript_count.csv.gz   // transcript count matrix
@@ -55,7 +56,7 @@ def get_args():
 
     parser.add_argument(
         "-i", "--fq_dir",
-        help="folder containing fastq files.",
+        help="folder containing fastq files, each containing data from one sample.",
         type=str,
         default=True
     )
