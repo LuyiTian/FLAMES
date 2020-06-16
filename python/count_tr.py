@@ -47,7 +47,23 @@ def wrt_tr_to_csv(bc_tr_count_dict, transcript_dict, csv_f, transcript_dict_ref=
     return tr_cnt
 
 
-def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_read_coverage):
+def make_bc_dict(bc_anno):
+    with open(bc_anno) as f:
+        # skip header line
+        f.readline()
+
+        bc_dict = dict()
+        for line in f:
+            line_vals = line.rstrip().split(',')
+            sample = line_vals[0]
+            bc = line_vals[1]
+            
+            bc_dict[bc] = sample
+        
+    return(bc_dict)
+
+
+def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_read_coverage, **kwargs):
     """
     """
     fa_idx = dict((it.strip().split()[0],int(it.strip().split()[1]) ) for it in open(fa_idx_f))
@@ -57,6 +73,8 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
     read_dict = {}
     cnt_stat = Counter()
     bamfile = pysam.AlignmentFile(bam_in, "rb")
+    if "bc_file" in kwargs.keys():
+        bc_dict = make_bc_dict(kwargs["bc_file"])
     for rec in bamfile.fetch(until_eof=True):
         if rec.is_unmapped:
             cnt_stat["unmapped"] += 1
@@ -90,6 +108,8 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
             cnt_stat["no_good_match"] += 1
             continue
         bc, umi = r.split("#")[0].split("_")  # assume cleaned barcode
+        if "bc_anno" in kwargs.keys():
+            bc = bc_dict[bc]
         if len(tmp)==1 and tmp[0][4]>0:
             if bc not in bc_tr_count_dict:
                 bc_tr_count_dict[bc] = {}
@@ -118,6 +138,7 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
             cnt_stat["counted_reads"] += 1
     print cnt_stat
     return bc_tr_count_dict, bc_tr_badcov_count_dict, tr_kept
+
 
 def parse_realigned_bam1(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_read_coverage):
     fa_idx = dict((it.strip().split()[0],int(it.strip().split()[1]) ) for it in open(fa_idx_f))
