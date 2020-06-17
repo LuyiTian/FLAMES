@@ -108,7 +108,7 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
             cnt_stat["no_good_match"] += 1
             continue
         bc, umi = r.split("#")[0].split("_")  # assume cleaned barcode
-        if "bc_anno" in kwargs.keys():
+        if "bc_file" in kwargs.keys():
             bc = bc_dict[bc]
         if len(tmp)==1 and tmp[0][4]>0:
             if bc not in bc_tr_count_dict:
