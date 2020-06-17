@@ -40,4 +40,7 @@ bulk_long_pipeline.py \
     --outdir FLAMES_output \
     --config_file data/SIRV_config.json \
     --fq_dir data/fastq
+
+# output data is in FLAMES_output
+ls FLAMES_output
 ```
