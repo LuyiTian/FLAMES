@@ -1,6 +1,7 @@
 # FLAMES
 
-![](img/flames_logo.png)
+<img src="img/flames_logo.png" width="400">
+
 
 Full-length transcriptome splicing and mutation analysis
 
