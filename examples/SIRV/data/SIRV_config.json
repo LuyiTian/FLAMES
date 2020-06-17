@@ -1,0 +1,36 @@
+{
+    "comment":"this is the default config for SIRV spike-in data. use splice annotation on alignment.",
+    "pipeline_parameters":{
+        "do_genome_alignment":true,
+        "do_isoform_identification":true,
+        "do_read_realignment":true,
+        "do_transcript_quantification":true
+    },
+    "global_parameters":{
+        "generate_raw_isoform":true,
+        "has_UMI":false
+    },
+    "isoform_parameters":{
+        "MAX_DIST":10,
+        "MAX_TS_DIST":100,
+        "MAX_SPLICE_MATCH_DIST":10,
+        "min_fl_exon_len":40,
+        "Max_site_per_splice":3,
+        "Min_sup_cnt":10,
+        "Min_cnt_pct":0.01,
+        "Min_sup_pct":0.2,
+        "strand_specific":1,
+        "remove_incomp_reads":5
+    },
+    "alignment_parameters":{
+        "use_junctions":true,
+        "no_flank":true
+    },
+    "realign_parameters":{
+        "use_annotation":true
+    },
+    "transcript_counting":{
+        "min_tr_coverage":0.75,
+        "min_read_coverage":0.75
+    }
+}
