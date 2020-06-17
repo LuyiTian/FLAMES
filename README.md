@@ -1,4 +1,7 @@
 # FLAMES
+
+![](img/flames_logo.png)
+
 Full-length transcriptome splicing and mutation analysis
 
 # Installation
