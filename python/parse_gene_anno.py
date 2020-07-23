@@ -25,9 +25,12 @@ def parseGTFAttributes(attributeString):
     ret = {}
     for attribute in attributeString.split(";"):
         if len(attribute)>0:
-            key, value = attribute.split()
-            value = value.replace('"', '').strip()  # remove quote
-            key = key.strip()
+            items = attribute.split("\"")
+            if len(items)<2:
+                print(("Cannot parse attr:",attribute))
+                continue
+            key = items[0].strip()
+            value = items[1].strip()
             ret[key] = value
     return ret
 
