@@ -16,7 +16,7 @@ conda create -n FLAMES \
 git clone https://github.com/LuyiTian/FLAMES.git
 ```
 
-# Usage
+# Usage for bulk data
 
 Before using this software, remember to activate the FLAMES conda environment. The main scripts are the pipelines for single cells and bulk samples.
 
@@ -25,8 +25,6 @@ conda activate FLAMES
 FLAMES/python/sc_long_pipeline.py --help
 FLAMES/python/bulk_long_pipeline.py --help
 ```
-
-# Example
 
 An example has been included with a small subset of SIRV data in the examples folder.
 
@@ -43,4 +41,58 @@ bulk_long_pipeline.py \
 
 # output data is in FLAMES_output
 ls FLAMES_output
+```
+
+# Usage for single cell data
+
+For single cell, the first step is to find cell barcode in each long read. You can use a precompiled linux binary in `src/bin/match_cell_barcode`. If you encontered error, espically due to the different running environment. you can compile it from source code using the following command. Please use a C++ compiler that support C++11 features.
+
+```
+g++ -std=c++11 -lz -O2 -o match_cell_barcode ssw/ssw_cpp.cpp ssw/ssw.c match_cell_barcode.cpp kseq.h edit_dist.cpp
+```
+
+Then you can run `./match_cell_barcode` without argument to print the help message. `match_cell_barcode` requires a folder that contains all fastq file (can be `.gz` file), a file name/path for the statistics of barcode matching, a csv file of cell barcode that used as reference and a file name/path to the output fastq.gz file. The cell barcode for 10x will be in `filtered_feature_bc_matrix/barcodes.tsv.gz`, please unzip the file and use `barcodes.tsv` as input. It also support scPipe cell barcode annotation file generated from `sc_detect_bc` function.
+
+Next, after you get the fastq file from `match_cell_barcode`. you could run `sc_long_pipeline.py` with the following command.
+
+
+```
+usage: FLTSA [-h] -a GFF3 [-i INFQ] [-b INBAM] --outdir OUTDIR --genomefa
+             GENOMEFA --minimap2_dir MINIMAP2_DIR [--config_file CONFIG_FILE]
+             [--downsample_ratio DOWNSAMPLE_RATIO]
+
+# semi-supervised isoform detection and annotation from long read data.
+# output:
+# outdir:
+#   transcript_count.csv.gz   // transcript count matrix
+#   isoform_annotated.filtered.gff3 // isoforms in gff3 format
+#   transcript_assembly.fa // transcript sequence from the isoforms
+#   align2genome.bam       // sorted bam file with reads aligned to genome
+#   realign2transcript.bam // sorted realigned bam file using the
+#                            transcript_assembly.fa as reference
+#   tss_tes.bedgraph       // TSS TES enrichment for all reads (for QC)
+################################################################
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -a GFF3, --gff3 GFF3  The gene annotation in gff3 format.
+  -i INFQ, --infq INFQ  input fastq file.
+  -b INBAM, --inbam INBAM
+                        aligned bam file (should be sorted and indexed). it
+                        will overwrite the `--infq` parameter and skip the
+                        first alignment step
+  --outdir OUTDIR, -o OUTDIR
+                        directory to deposite all results in rootdir, use
+                        absolute path
+  --genomefa GENOMEFA, -f GENOMEFA
+                        genome fasta file
+  --minimap2_dir MINIMAP2_DIR, -m MINIMAP2_DIR
+                        directory contains minimap2, k8 and paftools.js
+                        program. k8 and paftools.js are used to convert gff3
+                        to bed12.
+  --config_file CONFIG_FILE, -c CONFIG_FILE
+                        json configuration files (default
+                        config_sclr_nanopore_default.json)
+  --downsample_ratio DOWNSAMPLE_RATIO, -d DOWNSAMPLE_RATIO
+                        downsampling ratio if performing downsampling analysis
 ```
