@@ -96,3 +96,9 @@ optional arguments:
   --downsample_ratio DOWNSAMPLE_RATIO, -d DOWNSAMPLE_RATIO
                         downsampling ratio if performing downsampling analysis
 ```
+
+# configuration file
+
+FLAMES provides a default set of parameters, but can be changed by the configuration JSON file.
+The `pipeline_parameters` section specifies which step to be excuated in the pipeline, by default you should go though all steps.
+The `isoform_parameters` section determines the results isoform detection, some key parameters include `Min_sup_cnt` which means transcript with less read aligned than `Min_sup_cnt` will be discarded, `MAX_TS_DIST` which will merge transcripts with the same intron chain and TSS/TES distance less than `MAX_TS_DIST`. `strand_specific` will specify whether the the read is strand specific, such as the reads are in the same strand as the mRNA (1) or the reverse complement (-1), or the reads are not strand specific (0), which means the method will determine the strand information based on reference annotation.
