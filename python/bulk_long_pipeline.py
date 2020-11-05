@@ -63,7 +63,7 @@ def get_args():
 
     parser.add_argument(
         "-b", "--inbam",
-        help="aligned bam file (should be sorted and indexed). it will overwrite the `--infq` parameter and skip the first alignment step",
+        help="aligned bam file (should be sorted and indexed). it will overwrite the `--fq_dir` parameter and skip the first alignment step. This is only for advanced user.",
         type=str,
         default=""
     )
