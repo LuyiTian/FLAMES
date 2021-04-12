@@ -229,7 +229,6 @@ def bulk_long_pipeline(args):
 if __name__ == '__main__':
     args = get_args()
     args.infq = "{}/merged.fastq.gz".format(args.outdir)
-    args.bc_file = "{}/pseudo_barcode_annotation.csv".format(args.outdir)
 
     print "Preprocessing bulk fastqs..."
     # creating output diretory for use by merge_bulk_fq
@@ -237,8 +236,11 @@ if __name__ == '__main__':
         os.makedirs(args.outdir)
         print("output directory not exist, create one:")
         print(args.outdir)
-    if args.fq_dir!="":
+    if args.fq_dir != "":
+        args.bc_file = "{}/pseudo_barcode_annotation.csv".format(args.outdir)
         merge_bulk_fq(args.fq_dir, args.bc_file, args.infq)
+    else:
+        args.bc_file = ""
 
     print "Running FLAMES pipeline..."
     bulk_long_pipeline(args)
