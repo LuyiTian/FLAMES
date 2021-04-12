@@ -58,7 +58,7 @@ def get_args():
         "-i", "--fq_dir",
         help="folder containing fastq files, each containing data from one sample.",
         type=str,
-        default=True
+        default=""
     )
 
     parser.add_argument(
@@ -237,7 +237,8 @@ if __name__ == '__main__':
         os.makedirs(args.outdir)
         print("output directory not exist, create one:")
         print(args.outdir)
-    merge_bulk_fq(args.fq_dir, args.bc_file, args.infq)
+    if args.fq_dir!="":
+        merge_bulk_fq(args.fq_dir, args.bc_file, args.infq)
 
     print "Running FLAMES pipeline..."
     bulk_long_pipeline(args)
