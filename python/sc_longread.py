@@ -816,7 +816,7 @@ class Isoforms(object):
                         continue
                 tmp.sort(key=lambda x:x[0],reverse = True)
                 if tmp[0][0]>0:
-                    if i[0]>= gene_dict[tmp[0][1]][0] and i[-1]<= gene_dict[tmp[0][1]][-1]:
+                    if i[0]>= gene_dict[tmp[0][1]][0][0] and i[-1]<= gene_dict[tmp[0][1]][-1][-1]:
                         self.new_isoforms[i] = Iso(self.new_isoforms[i].support_cnt, "", tmp[0][1])
                     elif exon_overlap(i[2:4], gene_dict[tmp[0][1]])>0 and exon_overlap(i[-4:-2], gene_dict[tmp[0][1]])>0:  # the second and the second last within the gene
                         if i[1]-i[0]<=self.min_fl_exon_len and exon_overlap(i[0:2], gene_dict[tmp[0][1]])==0:
