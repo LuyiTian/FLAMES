@@ -11,7 +11,7 @@ The easiest way to install the dependencies for this package is using a conda en
 
 ```
 conda create -n FLAMES \
-    python=2.7 samtools pysam minimap2 numpy editdistance \
+    "python>=3.7" samtools pysam minimap2 numpy editdistance \
     -c bioconda -c conda-forge
 git clone https://github.com/LuyiTian/FLAMES.git
 ```
