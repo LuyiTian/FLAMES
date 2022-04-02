@@ -164,7 +164,8 @@ def sc_long_pipeline(args):
         if config_dict["alignment_parameters"]["use_junctions"]:
             gff3_to_bed12(args.minimap2_dir, args.gff3, tmp_bed)
         minimap2_align(args.minimap2_dir, args.genomefa, args.infq, tmp_bam,
-                       no_flank=config_dict["alignment_parameters"]["no_flank"], bed12_junc=tmp_bed if config_dict["alignment_parameters"]["use_junctions"] else None)
+                       no_flank=config_dict["alignment_parameters"]["no_flank"], bed12_junc=tmp_bed if config_dict["alignment_parameters"]["use_junctions"] else None,
+                       seed=config_dict["alignment_parameters"]["seed"])
         samtools_sort_index(tmp_bam, genome_bam)
         os.remove(tmp_bam)
         if config_dict["alignment_parameters"]["use_junctions"]:
@@ -209,7 +210,7 @@ def sc_long_pipeline(args):
     if config_dict["pipeline_parameters"]["do_read_realignment"]:
         print("### realign to transcript using minimap2",
               datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        minimap2_tr_align(args.minimap2_dir, transcript_fa, args.infq, tmp_bam)
+        minimap2_tr_align(args.minimap2_dir, transcript_fa, args.infq, tmp_bam, seed=config_dict["alignment_parameters"]["seed"])
         samtools_sort_index(tmp_bam, realign_bam)
         os.remove(tmp_bam)
     else:

@@ -8,12 +8,9 @@ import gzip
 from urllib.parse import urlparse
 import os
 import numpy as np
-import bisect
 import random
 import copy
-
 from parse_gene_anno import parse_gff_tree
-
 
 def take_closest(l, num):
     return min(l, key=lambda x: abs(x-num))

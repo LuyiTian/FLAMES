@@ -36,6 +36,7 @@ def parse_json_config(json_file):
     assert(type(decoded_dict["global_parameters"]
            ["generate_raw_isoform"]) == bool)
     assert(type(decoded_dict["global_parameters"]["has_UMI"]) == bool)
+    assert(type(decoded_dict["alignment_parameters"]["seed"]) == int)
     return decoded_dict
 
 

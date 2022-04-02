@@ -25,7 +25,8 @@
     },
     "alignment_parameters":{
         "use_junctions":true,
-        "no_flank":false
+        "no_flank":false,
+        "seed":2022
     },
     "realign_parameters":{
         "use_annotation":true
