@@ -1,5 +1,5 @@
 #parse gene annotation
-from collections import namedtuple, OrderedDict
+from collections import namedtuple
 
 # Initialized GeneInfo named tuple. Note: namedtuple is immutable
 gffInfoFields = ["seqid", "source", "type", "start", "end", "score", "strand", "phase", "attributes"]
@@ -88,10 +88,10 @@ def guess_annotation_source(gff_f):
 
 
 def _parse_gff_tree(gff_f):
-    chr_to_gene = OrderedDict()
-    transcript_dict = OrderedDict()
-    gene_to_transcript = OrderedDict()
-    transcript_to_exon = OrderedDict()
+    chr_to_gene = {}
+    transcript_dict = {}
+    gene_to_transcript = {}
+    transcript_to_exon = {}
     a_s = guess_annotation_source(gff_f)
     if a_s == "Ensembl":
         for rec in parseGFF3(gff_f):

@@ -1,6 +1,5 @@
 # find isoforms in longread data
 import pysam
-from collections import OrderedDict
 #from BCBio import GFF # never stop running. is there a bug?
 
 ####### from: https://techoverflow.net/2013/11/30/a-simple-gff3-parser-in-python/
@@ -14,7 +13,6 @@ import random
 import copy
 from itertools import izip
 from parse_gene_anno import parse_gff_tree
-import re
 
 
 def take_closest(l, num):
@@ -223,33 +221,27 @@ def find_best_splice_chain(raw_iso, junc_list, max_dist):
     else:
         return list(raw_iso)
 
+
 def get_gene_flat(gene_to_transcript, transcript_to_exon):
-    """
-    Return a dictionary with gene_id as key and list of exons as value.
-    Overlapping exons are merged, e.g. (1,4),(2,5) -> (1,5)
-    Exons are either a list of 2 int or a tuple of 2 int.
-    """
-    gene_dict =  OrderedDict()
+    gene_dict = {}
     for g in gene_to_transcript:
-        exons = []
-        for tr in gene_to_transcript[g]:
-            for exon in transcript_to_exon[tr]:
-                exons.append(copy.deepcopy(exon))
-
-        if len(exons) < 2:
-            gene_dict[g] = exons
-        else:
-            exons.sort(key=lambda exon: exon[0])
-            merged_exons = [exons[0]]
-            for higher in exons[1:]: # start of higher >= start of lower
-                lower = merged_exons[-1]
-                if higher[0] <= lower[1]:
-                    end = max(lower[1], higher[1])
-                    merged_exons[-1] = (lower[0], end) # Tuple
-                else:
-                    merged_exons.append(higher)
-            gene_dict[g] = merged_exons
-
+        gene_dict[g] = copy.deepcopy(transcript_to_exon[gene_to_transcript[g][0]])
+        if len(gene_to_transcript[g]) > 1:
+            for i in range(1, len(gene_to_transcript[g])):
+                for j in range(len(transcript_to_exon[gene_to_transcript[g][i]])):
+                    j_found = False
+                    for k in range(len(gene_dict[g])):
+                        if transcript_to_exon[gene_to_transcript[g][i]][j][0]> gene_dict[g][k][1] or \
+                        transcript_to_exon[gene_to_transcript[g][i]][j][1]< gene_dict[g][k][0]:
+                            continue
+                        j_found = True
+                        if transcript_to_exon[gene_to_transcript[g][i]][j][1] > gene_dict[g][k][1]:
+                            gene_dict[g][k][1] = transcript_to_exon[gene_to_transcript[g][i]][j][1]
+                        if transcript_to_exon[gene_to_transcript[g][i]][j][0] < gene_dict[g][k][0]:
+                            gene_dict[g][k][0] = transcript_to_exon[gene_to_transcript[g][i]][j][0]
+                    if j_found==False:
+                        gene_dict[g].append(copy.deepcopy(transcript_to_exon[gene_to_transcript[g][i]][j])) # no overlapping, add new exon
+        gene_dict[g].sort(key=lambda x:x[0]) # sort by left most positions
     return gene_dict
 
 class GeneBlocks(object):
@@ -258,7 +250,7 @@ class GeneBlocks(object):
         self.s = start
         self.e = end
         self.transcript_list = transcript_list
-        self.gene_to_tr =  OrderedDict()
+        self.gene_to_tr = {}
         self.gene_to_tr[a_gene] = tuple(transcript_list)
     def add_gene(self, start, end, transcript_list, a_gene):
         self.e = max(self.e, end)
@@ -283,10 +275,8 @@ def blocks_to_junctions(blocks):
 
 
 def get_gene_blocks(gene_dict, chr_to_gene, gene_to_transcript):
-    chr_to_blocks =  OrderedDict() 
+    chr_to_blocks = {}
     for ch in chr_to_gene:
-        if type(chr_to_gene[ch]) != type([]):
-            chr_to_gene[ch] = [chr_to_gene[ch]]
         gene_l = []
         chr_to_blocks[ch] = []
         for g in chr_to_gene[ch]:
@@ -365,12 +355,12 @@ class Isoforms(object):
     """docstring for Isoforms"""
     def __init__(self, ch, config):
         self.ch = ch
-        self.junction_dict = OrderedDict()
+        self.junction_dict = {}
         self.junction_list = []
-        self.lr_pair =  OrderedDict()
+        self.lr_pair = {}
         self.left = []
         self.right = []
-        self.single_block_dict = OrderedDict()
+        self.single_block_dict = {}
         self.single_blocks = []
         self.MAX_DIST=config["MAX_DIST"]
         self.MAX_TS_DIST=config["MAX_TS_DIST"]
@@ -381,11 +371,11 @@ class Isoforms(object):
         self.Min_sup_pct=config["Min_sup_pct"]
         self.strand_specific = config["strand_specific"]
         self.remove_incomp_reads= config["remove_incomp_reads"] # 0: keep all truncated isoforms. 1: remove truncated reads (modest level). 1: remove truncated reads (unless they really highly expressed)
-        self.strand_cnt =  OrderedDict() # 0: reverse strand. 1: forward strand
-        self.new_isoforms = OrderedDict() # new isoforms after matching the annotation
-        self.known_isoforms = OrderedDict() # known isoforms after matching the annotation
-        self.raw_isoforms = OrderedDict() #isoform assembly before matching the annotation
-        self.ge_dict = OrderedDict() # gene id to isoform
+        self.strand_cnt = {} # 0: reverse strand. 1: forward strand
+        self.new_isoforms = {} # new isoforms after matching the annotation
+        self.known_isoforms = {} # known isoforms after matching the annotation
+        self.raw_isoforms = {} #isoform assembly before matching the annotation
+        self.ge_dict = {} # gene id to isoform
 
     def add_isoform(self, junctions, is_rev):
         """
@@ -459,10 +449,10 @@ class Isoforms(object):
         return len(self.junction_dict)+len(self.single_block_dict)
 
     def update_all_splice(self):
-        junction_tmp = OrderedDict()
-        single_block_tmp = OrderedDict()
-        strand_cnt_tmp =  OrderedDict()
-        lr_pair_tmp =  OrderedDict()
+        junction_tmp = {}
+        single_block_tmp = {}
+        strand_cnt_tmp = {}
+        lr_pair_tmp = {}
         for j in self.junction_dict:
             if len(self.junction_list[self.junction_dict[j]]) >= self.Min_sup_cnt:  # only more than `Min_sup_cnt` reads support this splicing
                 new_j = tuple((Counter(it[i] for it in self.junction_list[self.junction_dict[j]]).most_common(1)[0][0] for i in range(len(j))))
@@ -585,7 +575,7 @@ class Isoforms(object):
                 cnt_r = insert_dist(fs_r[:,0],known_site["right"] if known_site is not None else None)
                 cnt_r.sort()
         for j in self.lr_pair:
-            tmp_pair = sorted(Counter(self.lr_pair[j]).most_common())
+            tmp_pair = Counter(self.lr_pair[j]).most_common()
             pair_after_filtering = []
             pair_enrich = []
             for p,_ in tmp_pair:  # first search for common enriched TSS/TES
@@ -813,7 +803,7 @@ class Isoforms(object):
 
         # match to gene
         del_key = []
-        update_iso_dict = OrderedDict()
+        update_iso_dict = {}
         if len(self.new_isoforms)>0:
             for i in self.new_isoforms:
                 iso_len = sum(it[1]-it[0] for it in pairwise(i))
@@ -875,7 +865,7 @@ class Isoforms(object):
     def isoform_to_gff3(self, isoform_pct=-1):
         gff3_fmt = "{_ch}\t{_sr}\t{_ty}\t{_st}\t{_en}\t{_sc}\t{_stnd}\t{_ph}\t{_attr}"
         gff_rec = []
-        transcript_id_dict=OrderedDict()
+        transcript_id_dict={}
         if len(self.new_isoforms)+len(self.known_isoforms) == 0:
             return ""
         for g in self.ge_dict:
@@ -930,8 +920,8 @@ class Isoforms(object):
         """
         gff3_fmt = "{_ch}\t{_sr}\t{_ty}\t{_st}\t{_en}\t{_sc}\t{_stnd}\t{_ph}\t{_attr}"
         gff_tmp = []
-        transcript_id_dict = OrderedDict()
-        exon_id_dict = OrderedDict()
+        transcript_id_dict={}
+        exon_id_dict={}
         for iso in self.raw_isoforms:
             exon_idx = 1
             tp_id = "{}_{}".format(iso[0]+1,iso[-1])
@@ -957,17 +947,6 @@ class Isoforms(object):
 
 
 
-def atoi(text):
-    return int(text) if text.isdigit() else text
-
-def natural_keys(text):
-    '''
-    alist.sort(key=natural_keys) sorts in human order
-    http://nedbatchelder.com/blog/200712/human_sorting.html
-    (See Toothy's implementation in the comments)
-    '''
-    return [ atoi(c) for c in re.split(r'(\d+)', text) ]
-
 
 
 def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, gene_dict, transcript_to_junctions, transcript_dict, fa_f, config, downsample_ratio, raw_gff3=None):
@@ -983,11 +962,11 @@ def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, ge
         splice_raw = open(raw_gff3,"w")
         splice_raw.write("##gff-version 3\n")
     tss_tes_stat = open(out_stat,"w")
-    isoform_dict =  OrderedDict()
-    fa_dict =  OrderedDict()
+    isoform_dict = {}
+    fa_dict = {}
     for c in get_fa(fa_f):
         fa_dict[c[0]] = c[1]
-    for ch in sorted(chr_to_blocks.keys(), key=natural_keys):
+    for ch in chr_to_blocks:
         # print ch
         #if ch != "5":
         #    continue
@@ -1001,7 +980,6 @@ def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, ge
                     continue   # downsample analysis
                 if rec.is_secondary:
                     continue
-                #print "rec:", bl.s, bl.e
                 rec.cigar = smooth_cigar(rec.cigar, thr=20)
                 blocks = rec.get_blocks()
                 junctions = blocks_to_junctions(blocks)
@@ -1011,8 +989,6 @@ def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, ge
                 tmp_isoform.filter_TSS_TES(tss_tes_stat,known_site=TSS_TES_site,fdr_cutoff=0.1)
                 #tmp_isoform.site_stat(tss_tes_stat)
                 tmp_isoform.match_known_annotation(transcript_to_junctions, transcript_dict, gene_dict, bl, fa_dict)
-                #for i in tmp_isoform.new_isoforms:
-                #    print str(i) + ": " + str(tmp_isoform.new_isoforms[i])
                 isoform_dict[(ch, bl.s, bl.e)] =tmp_isoform
                 if raw_gff3 is not None:
                     splice_raw.write(tmp_isoform.raw_splice_to_gff3())
