@@ -12,6 +12,10 @@ import random
 import copy
 from parse_gene_anno import parse_gff_tree
 
+
+Iso = namedtuple('Iso', ["support_cnt", "transcript_id", "gene_id"])
+
+
 def take_closest(l, num):
     return min(l, key=lambda x: abs(x-num))
 
@@ -691,7 +695,6 @@ class Isoforms(object):
 
         should run after `update_all_splice` amd `filter_TSS_TES`
         """
-        Iso = namedtuple('Iso', ["support_cnt", "transcript_id", "gene_id"])
         splice_site = get_splice_site(
             transcript_to_junctions, one_block.transcript_list)
         junc_list = [transcript_to_junctions[it]["junctions"]
@@ -1049,6 +1052,30 @@ class Isoforms(object):
         else:
             return ""
 
+    def match_known_seg(self, transcript_to_junctions, transcript_dict, gene_dict, bl, fa_dict, min_exon_coverage=0.8):
+        for one_exon in self.single_block_dict:
+            for tr in bl.transcript_list:
+                ref_exon = (
+                    transcript_to_junctions[tr]["left"], transcript_to_junctions[tr]["right"])
+                if get_exon_sim_pct(one_exon, ref_exon) >= min_exon_coverage:
+                    if ref_exon in self.known_isoforms:
+                        self.known_isoforms[ref_exon] = Iso(self.known_isoforms[ref_exon].support_cnt+len(
+                            self.single_blocks[self.single_block_dict[one_exon]]), tr, transcript_dict[tr].parent_id)
+                    else:
+                        self.known_isoforms[ref_exon] = Iso(len(
+                            self.single_blocks[self.single_block_dict[one_exon]]), tr, transcript_dict[tr].parent_id)
+                        if self.strand_specific == 0:  # if not strand specific protocol, use annotation
+                            self.strand_cnt[tuple(
+                                ref_exon)] = 1 if transcript_dict[tr].strand == "+" else -1
+                        else:
+                            self.strand_cnt[tuple(
+                                ref_exon)] = self.strand_cnt[one_exon]
+                    continue
+
+        for i in self.known_isoforms:
+            self.ge_dict.setdefault(
+                self.known_isoforms[i].gene_id, []).append(i)
+
 
 def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, gene_dict, transcript_to_junctions, transcript_dict, fa_f, config, downsample_ratio, raw_gff3=None):
     if "random_seed" in list(config.keys()):
@@ -1091,8 +1118,10 @@ def group_bam2isoform(bam_in, out_gff3, out_stat, summary_csv, chr_to_blocks, ge
                 tmp_isoform.filter_TSS_TES(
                     tss_tes_stat, known_site=TSS_TES_site, fdr_cutoff=0.1)
                 # tmp_isoform.site_stat(tss_tes_stat)
-                tmp_isoform.match_known_annotation(
-                    transcript_to_junctions, transcript_dict, gene_dict, bl, fa_dict)
+                if tmp_isoform.match_known_annotation(
+                        transcript_to_junctions, transcript_dict, gene_dict, bl, fa_dict) == 0:
+                    tmp_isoform.match_known_seg(
+                        transcript_to_junctions, transcript_dict, gene_dict, bl, fa_dict)
                 isoform_dict[(ch, bl.s, bl.e)] = tmp_isoform
                 if raw_gff3 is not None:
                     splice_raw.write(tmp_isoform.raw_splice_to_gff3())
