@@ -1,16 +1,18 @@
 # quantify transcript
-import pysam
+# import pysam
+import pysam as ps
 import os
 from collections import Counter
 import gzip
 import numpy as np
 import editdistance
 from parse_gene_anno import parse_gff_tree
+from itertools import groupby
 
 
 def umi_dedup(l, has_UMI):
     if has_UMI:
-        l_cnt = Counter(l).most_common()
+        l_cnt = sorted(Counter(l).most_common(), key=lambda x: (x[1], x[0]), reverse=True)
         if len(l_cnt) == 1:
             return 1
         rm_umi = {}
@@ -38,9 +40,11 @@ def wrt_tr_to_csv(bc_tr_count_dict, transcript_dict, csv_f, transcript_dict_ref=
                  if tr in bc_tr_count_dict[x] else 0 for x in bc_tr_count_dict]
         tr_cnt[tr] = sum(cnt_l)
         if tr in transcript_dict:
-            f.write("{},{},".format(tr, transcript_dict[tr].parent_id))
+            f.write(
+                "{},{},".format(tr, transcript_dict[tr].parent_id))
         elif (transcript_dict_ref is not None) and (tr in transcript_dict_ref):
-            f.write("{},{},".format(tr, transcript_dict_ref[tr].parent_id))
+            f.write(
+                "{},{},".format(tr, transcript_dict_ref[tr].parent_id))
         else:
             print("cannot find transcript in transcript_dict:", tr)
             exit(1)
@@ -65,6 +69,35 @@ def make_bc_dict(bc_anno):
     return(bc_dict)
 
 
+def query_len(cigar_string, hard_clipping=False):
+    """
+    https://stackoverflow.com/questions/39710796/infer-the-length-of-a-sequence-using-the-cigar
+    Given a CIGAR string, return the number of bases consumed from the
+    query sequence.
+    CIGAR is a sequence of the form <operations><operator> such that operations is an integer giving 
+    the number of times the operator is used
+    M = match
+    I = Insertion
+    S = Soft clipping
+    = = sequence match
+    X = sequence mismatch
+    """
+    if (not hard_clipping):
+        read_consuming_ops = ("M", "I", "S", "=", "X")
+    else:
+        read_consuming_ops = {"M", "I", "S", "H", "=", "X"}
+    result = 0
+    cig_iter = groupby(cigar_string, lambda chr: chr.isdigit())
+    this_len = 0
+    for is_digit, val in cig_iter:
+        if is_digit:
+            this_len = int(''.join(val))
+        else:
+            if ''.join(val) in read_consuming_ops:
+                result += this_len
+    return result
+
+
 def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_read_coverage, **kwargs):
     """
     """
@@ -75,8 +108,9 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
     tr_cov_dict = {}
     read_dict = {}
     cnt_stat = Counter()
-    bamfile = pysam.AlignmentFile(bam_in, "rb")
-    if "bc_file" in list(kwargs.keys()) and kwargs["bc_file"] != "":
+    bamfile = ps.AlignmentFile(bam_in, "rb")
+
+    if "bc_file" in list(kwargs.keys()):
         bc_dict = make_bc_dict(kwargs["bc_file"])
     for rec in bamfile.fetch(until_eof=True):
         if rec.is_unmapped:
@@ -105,7 +139,7 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
                     rec.query_alignment_length)/rec.infer_read_length(), rec.mapping_quality))
         if tr not in fa_idx:
             cnt_stat["not_in_annotation"] += 1
-            print(tr, "not in annotation ???")
+            print("\t" + str(tr), "not in annotation ???")
     tr_kept = dict((tr, tr) for tr in tr_cov_dict if len(
         [it for it in tr_cov_dict[tr] if it > 0.9]) > min_sup_reads)
     unique_tr_count = Counter(read_dict[r][0][0]
@@ -118,8 +152,17 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
         else:
             cnt_stat["no_good_match"] += 1
             continue
-        bc, umi = r.split("#")[0].split("_")  # assume cleaned barcode
-        if "bc_file" in list(kwargs.keys()) and kwargs["bc_file"] != "":
+        # below line creates issue when header line has more than one _.
+        # in this case, umi is assumed to be delimited from the barcode by the last _
+        # bc, umi = r.split("#")[0].split("_")  # assume cleaned barcode
+        try:
+            bc, umi = r.split("#")[0].split("_")  # assume cleaned barcode
+        except ValueError as ve:
+            print(ve, ": ", ve.args, ".")
+            raise ValueError(
+                "Please check if barcode and UMI are delimited by \"_\"")
+
+        if "bc_file" in list(kwargs.keys()):
             bc = bc_dict[bc]
         if len(tmp) == 1 and tmp[0][4] > 0:
             if bc not in bc_tr_count_dict:
@@ -147,7 +190,7 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
                 bc_tr_count_dict[bc] = {}
             bc_tr_count_dict[bc].setdefault(hit[0], []).append(umi)
             cnt_stat["counted_reads"] += 1
-    print(cnt_stat)
+    print(("\t" + str(cnt_stat)))
     return bc_tr_count_dict, bc_tr_badcov_count_dict, tr_kept
 
 
@@ -159,8 +202,9 @@ def parse_realigned_bam1(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_r
     tr_cov_dict = {}
     read_dict = {}
     cnt_stat = Counter()
-    bamfile = pysam.AlignmentFile(bam_in, "rb")
+    bamfile = ps.AlignmentFile(bam_in, "rb")
     for rec in bamfile.fetch(until_eof=True):
+        inferred_read_length = query_len(rec.cigarstring)
         if rec.is_unmapped or rec.is_secondary:  # or rec.mapping_quality==0:
             cnt_stat["not_counted"] += 1
             continue
@@ -186,7 +230,7 @@ def parse_realigned_bam1(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_r
         cnt_stat["counted_reads"] += 1
     tr_kept = dict((tr, tr) for tr in tr_cov_dict if len(
         [it for it in tr_cov_dict[tr] if it > 0.9]) > min_sup_reads)
-    print(cnt_stat)
+    print(("\t" + str(cnt_stat)))
     return bc_tr_count_dict, bc_tr_badcov_count_dict, tr_kept
 
 
@@ -198,7 +242,7 @@ def parse_realigned_bam_raw(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, mi
     tr_cov_dict = {}
     read_dict = {}
     cnt_stat = Counter()
-    bamfile = pysam.AlignmentFile(bam_in, "rb")
+    bamfile = ps.AlignmentFile(bam_in, "rb")
     for rec in bamfile.fetch(until_eof=True):
         if rec.is_unmapped or rec.is_secondary:  # or rec.mapping_quality==0:
             cnt_stat["not_counted"] += 1
@@ -219,7 +263,7 @@ def parse_realigned_bam_raw(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, mi
         cnt_stat["counted_reads"] += 1
     tr_kept = dict((tr, tr) for tr in tr_cov_dict if len(
         [it for it in tr_cov_dict[tr] if it > 0.9]) > min_sup_reads)
-    print(cnt_stat)
+    print(("\t" + str(cnt_stat)))
     return bc_tr_count_dict, bc_tr_badcov_count_dict, tr_kept
 
 
@@ -243,7 +287,7 @@ def realigned_bam_coverage(bam_in, fa_idx_f, coverage_dir):
     bc_pct = {0: {}, 1: {}, 2: {}, 3: {}, 4: {}}
     bc_cov_pct = {0: [], 1: [], 2: [], 3: [], 4: []}
     gene_pct = {0: [], 1: [], 2: [], 3: [], 4: []}
-    bamfile = pysam.AlignmentFile(bam_in, "rb")
+    bamfile = ps.AlignmentFile(bam_in, "rb")
     for rec in bamfile.fetch(until_eof=True):
         if rec.is_unmapped or rec.is_supplementary or rec.is_secondary:
             continue

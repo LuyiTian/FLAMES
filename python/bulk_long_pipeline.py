@@ -193,7 +193,7 @@ def bulk_long_pipeline(args):
         args.gff3)
     transcript_to_junctions = {tr: blocks_to_junctions(
         transcript_to_exon[tr]) for tr in transcript_to_exon}
-    remove_similar_tr(transcript_dict, gene_to_transcript, transcript_to_exon)
+    remove_similar_tr(gene_to_transcript, transcript_to_exon)
     gene_dict = get_gene_flat(gene_to_transcript, transcript_to_exon)
     chr_to_blocks = get_gene_blocks(gene_dict, chr_to_gene, gene_to_transcript)
     if config_dict["pipeline_parameters"]["do_isoform_identification"]:
