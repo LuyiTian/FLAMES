@@ -2,7 +2,8 @@
 
 from parse_gene_anno import parse_gff_tree
 import subprocess
-CP = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N","a":"t","t":"a","c":"g","g":"c"}
+CP = {"A": "T", "T": "A", "C": "G", "G": "C",
+      "N": "N", "a": "t", "t": "a", "c": "g", "g": "c"}
 
 
 def r_c(seq):
@@ -39,7 +40,7 @@ def write_fa(fn, na, seq, warp_len=50):
 
 
 def get_transcript_seq(fa_file, fa_out_f, chr_to_gene, transcript_dict,
-                       gene_to_transcript, transcript_to_exon, ref_dict = None):
+                       gene_to_transcript, transcript_to_exon, ref_dict=None):
     global_isoform_dict = {}
     global_seq_dict = {}
     fa_dict = {}
@@ -47,18 +48,20 @@ def get_transcript_seq(fa_file, fa_out_f, chr_to_gene, transcript_dict,
     for ch, seq in get_fa(fa_file):
         if ch not in chr_to_gene:
             continue
-        else:
-            pass
-            # print("start to process chromosome", ch)
+        # print("start to process chromosome", ch)
+        if (not isinstance(chr_to_gene[ch], list)):
+            chr_to_gene[ch] = [chr_to_gene[ch]]
         for gene in chr_to_gene[ch]:
             for tr in gene_to_transcript[gene]:
                 iso_l = []
                 for e in transcript_to_exon[tr]:
-                    assert (e[0]<e[1]),"exon end should be greater than exon start position."
+                    assert (
+                        e[0] < e[1]), "exon end should be greater than exon start position."
                     iso_l.append(e[0])
                     iso_l.append(e[1])
                 if tuple(iso_l) in global_isoform_dict:
-                    print "duplicate transcript annotation:", global_isoform_dict[tuple(iso_l)], tr
+                    print("duplicate transcript annotation:",
+                          global_isoform_dict[tuple(iso_l)], tr)
                 else:
                     global_isoform_dict[tuple(iso_l)] = tr
                     tr_seq = []
@@ -69,7 +72,8 @@ def get_transcript_seq(fa_file, fa_out_f, chr_to_gene, transcript_dict,
                         tr_seq = r_c(tr_seq)
                     fa_dict[tr] = tr_seq
                     if tr_seq in global_seq_dict:
-                        print "duplicate transcript sequence:", global_seq_dict[tr_seq], tr
+                        print("duplicate transcript sequence:",
+                              global_seq_dict[tr_seq], tr)
                     else:
                         global_seq_dict[tr_seq] = tr
                         #write_fa(fa_out, tr, tr_seq)
@@ -80,14 +84,17 @@ def get_transcript_seq(fa_file, fa_out_f, chr_to_gene, transcript_dict,
                             continue  # already in new annotation
                         iso_l = []
                         for e in ref_dict["transcript_to_exon"][tr]:
-                            assert (e[0]<e[1]),"exon end should be greater than exon start position."
+                            assert (
+                                e[0] < e[1]), "exon end should be greater than exon start position."
                             iso_l.append(e[0])
                             iso_l.append(e[1])
                         if tuple(iso_l) in global_isoform_dict:
                             if global_isoform_dict[tuple(iso_l)] not in ref_dict["transcript_dict"]:
-                                print "transcript with same coordination", global_isoform_dict[tuple(iso_l)],tr
-                                print iso_l
-                                global_seq_dict[fa_dict[global_isoform_dict[tuple(iso_l)]]] = tr
+                                print("transcript with same coordination",
+                                      global_isoform_dict[tuple(iso_l)], tr)
+                                print(iso_l)
+                                global_seq_dict[fa_dict[global_isoform_dict[tuple(
+                                    iso_l)]]] = tr
                         else:
                             global_isoform_dict[tuple(iso_l)] = tr
                             tr_seq = []
@@ -97,7 +104,8 @@ def get_transcript_seq(fa_file, fa_out_f, chr_to_gene, transcript_dict,
                             if ref_dict["transcript_dict"][tr].strand != "+":
                                 tr_seq = r_c(tr_seq)
                             if tr_seq in global_seq_dict:
-                                print "duplicate transcript sequence:", global_seq_dict[tr_seq], tr
+                                print("duplicate transcript sequence:",
+                                      global_seq_dict[tr_seq], tr)
                                 global_seq_dict[tr_seq] = tr
                             else:
                                 global_seq_dict[tr_seq] = tr
@@ -105,15 +113,15 @@ def get_transcript_seq(fa_file, fa_out_f, chr_to_gene, transcript_dict,
     for tr_seq in global_seq_dict:
         write_fa(fa_out, global_seq_dict[tr_seq], tr_seq)
     fa_out.close()
-    print subprocess.check_output(["samtools faidx {}".format(fa_out_f)], shell=True, stderr=subprocess.STDOUT)
-
-
-
+    print(subprocess.check_output(["samtools faidx {}".format(
+        fa_out_f)], shell=True, stderr=subprocess.STDOUT))
 
 
 if __name__ == '__main__':
     gff_f = "/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/PromethION/isoforms/isoform_annotated.sample.nofilter.gff3"
     fa_file = "/stornext/General/data/user_managed/grpu_mritchie_1/LuyiTian/Index/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
     fa_out_f = "/stornext/General/data/user_managed/grpu_mritchie_1/SCmixology/PromethION/isoforms/human_GRCh38_transcript.sample.fa"
-    chr_to_gene, transcript_dict, gene_to_transcript, transcript_to_exon = parse_gff_tree(gff_f)
-    get_transcript_seq(fa_file, fa_out_f, chr_to_gene, transcript_dict, gene_to_transcript, transcript_to_exon)
+    chr_to_gene, transcript_dict, gene_to_transcript, transcript_to_exon = parse_gff_tree(
+        gff_f)
+    get_transcript_seq(fa_file, fa_out_f, chr_to_gene,
+                       transcript_dict, gene_to_transcript, transcript_to_exon)
