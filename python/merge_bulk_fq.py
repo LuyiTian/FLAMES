@@ -26,7 +26,7 @@ class Fastq(object):
 def readfq(fq):
     record = []
     openFunc = gzip.open if fq.endswith(".gz") else open
-    for line in openFunc(fq):
+    for line in openFunc(fq, "rt"):
         record.append(line.strip())
         if len(record) == 4:
             yield Fastq(record)

@@ -1,4 +1,5 @@
 # parse gene annotation
+import gzip
 from collections import namedtuple
 
 # Initialized GeneInfo named tuple. Note: namedtuple is immutable
@@ -53,7 +54,7 @@ def parseGFF3(filename):
     openFunc = gzip.open if filename.endswith(".gz") else open
     attrFunc = parseGTFAttributes if filename.endswith(
         "gtf.gz") or filename.endswith(".gtf") else parseGFFAttributes
-    with openFunc(filename) as infile:
+    with openFunc(filename, 'rt') as infile:
         for line in infile:
             if line.startswith("#"):
                 continue

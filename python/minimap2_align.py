@@ -1,6 +1,5 @@
 import subprocess
 import os
-import pysam
 
 
 def gff3_to_bed12(mm2_prog_path, gff3_file, bed12_file):
