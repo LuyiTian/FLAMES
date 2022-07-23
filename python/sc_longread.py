@@ -1,4 +1,5 @@
 # find isoforms in longread data
+from math import inf
 import pysam
 # from BCBio import GFF # never stop running. is there a bug?
 
@@ -444,13 +445,22 @@ class Isoforms(object):
                         junctions["junctions"]), is_rev)
                 else:
                     found = False
+                    most_similar_key = None
+                    min_distance = inf
                     for j in self.junction_dict:
                         if len(j) == len(junctions["junctions"]):
-                            if all(abs(it-ij) < self.MAX_DIST for it, ij in zip(j, junctions["junctions"])):
-                                self.__update_one(junctions, j, is_rev)
-                                found = True
-                                break
-                    if not found:
+                            distance_per_key = [abs(it-ij) for it, ij in zip(j, junctions["junctions"])]
+                            if all(i < self.MAX_DIST for i in distance_per_key):
+                                if sum(distance_per_key) < min_distance:
+                                    found = True
+                                    most_similar_key = j
+                                    min_distance = sum(distance_per_key)
+                                # self.__update_one(junctions, j, is_rev)
+                                # found = True
+                                # break
+                    if found:
+                        self.__update_one(junctions, most_similar_key, is_rev)
+                    else:
                         self.__add_one(junctions, is_rev)
 
     def __add_one(self, junctions, strand):
