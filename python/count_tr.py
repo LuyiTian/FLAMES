@@ -148,7 +148,7 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
         tmp = read_dict[r]
         tmp = [it for it in tmp if it[0] in tr_kept]
         if len(tmp) > 0:
-            hit = tmp[0]  # transcript_id, pct_ref, pct_reads
+            hit = tmp[0]  # transcript_id, alignment score ("AS"), pct_ref, pct_reads, MAPQ of the first alignment record of read 'r'
         else:
             cnt_stat["no_good_match"] += 1
             continue
@@ -170,7 +170,7 @@ def parse_realigned_bam(bam_in, fa_idx_f, min_sup_reads, min_tr_coverage, min_re
             bc_tr_count_dict[bc].setdefault(hit[0], []).append(umi)
             cnt_stat["counted_reads"] += 1
         elif len(tmp) > 1 and tmp[0][1] == tmp[1][1] and tmp[0][3] == tmp[1][3]:
-            if hit[1] > 0.8:
+            if hit[2] > 0.8:
                 if bc not in bc_tr_count_dict:
                     bc_tr_count_dict[bc] = {}
                 bc_tr_count_dict[bc].setdefault(hit[0], []).append(umi)
