@@ -4,6 +4,7 @@
 #include <bitset>
 #include <algorithm>
 #include <stdlib.h>
+#include <cstdint>
 
 namespace scutil{
     int hamming_distance(const std::string &A, const std::string &B);
