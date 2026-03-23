@@ -1,3 +1,8 @@
+#  FLAMES has since been upadted to FLAMESv2
+
+You can find the upadted source code, pre-print and tutorials here: https://mritchielab.github.io/FLAMES/index.html 
+
+
 # FLAMES
 
 <img src="img/flames_logo.png" width="400">
